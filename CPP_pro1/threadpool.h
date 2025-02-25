@@ -99,6 +99,7 @@ public:
     void setVal(Any any);
     // 问题二：get方法，用户调用这个方法获取task的返回值
     Any get();
+    ;
 
 private:
     Any any_;                     // 存储任务的返回值

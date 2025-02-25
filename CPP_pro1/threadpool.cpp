@@ -28,6 +28,7 @@ void ThreadPool::setMode(PoolMode mode) {
 		return;
 	}
 	poolMode_ = mode;
+	;
 }
 
 // 设置task任务队列上线的阈值

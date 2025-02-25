@@ -20,6 +20,7 @@ public:
         }
         std::cout << "tid:" << std::this_thread::get_id() << "end!" << std::endl;
         return sum;
+        ;
     }
 
 private:
