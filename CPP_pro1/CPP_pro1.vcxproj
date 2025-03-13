@@ -131,7 +131,10 @@
     <ClInclude Include="threadpool.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="newtest.cpp" />
+    <ClCompile Include="conditiontest.cpp" />
+    <ClCompile Include="newtest.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
