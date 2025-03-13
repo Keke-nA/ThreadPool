@@ -10,7 +10,8 @@ const int THREAD_MAX_IDLE_TIME = 60;  // 单位：s
 
 // 线程池构造
 ThreadPool::ThreadPool()
-	: initThreadSize_(0), taskSize_(0), curThreadSize_(0), idleThreadSize_(0), threadSizeThreshHold_(THREAD_MAX_THRESHHOLD), taskQueMaxThreshHold_(TASK_MAX_THRESHHOLD), poolMode_(PoolMode::MODE_FIXED), isPoolRunning_(false) {}
+	: initThreadSize_(0), taskSize_(0), curThreadSize_(0), idleThreadSize_(0), threadSizeThreshHold_(THREAD_MAX_THRESHHOLD), taskQueMaxThreshHold_(TASK_MAX_THRESHHOLD), poolMode_(PoolMode::MODE_FIXED), isPoolRunning_(false) {
+}
 
 // 线程池析构
 ThreadPool::~ThreadPool() {
@@ -97,7 +98,12 @@ void ThreadPool::start(int initThreadSize) {
 	// 创建线程对象
 	for (int i = 0; i < initThreadSize_; ++i) {
 		// 创建thread线程对象的时候，把线程函数给到thread线程对象
-		auto ptr = std::make_unique<Thread>(std::bind(&ThreadPool::threadFunc, this, std::placeholders::_1));
+		//auto ptr = std::make_unique<Thread>(std::bind(&ThreadPool::threadFunc, this, std::placeholders::_1));
+		auto ptr = std::make_unique<Thread>(
+			[this](int arg) {
+				this->threadFunc(arg);
+			}
+		);
 		int threadId = ptr->getId();
 		threads_.emplace(threadId, std::move(ptr));
 		// threads_.emplace_back(std::move(ptr));
@@ -129,7 +135,7 @@ void ThreadPool::threadFunc(int threadid) {  // 线程函数返回，相应的线程也就结束
 			// cached模式下，有可能已经创建了很多的线程，但是空闲时间超过60s，
 			// 应该把多余的线程结束回收掉（超过initThreadSize_数量的线程要进行回收）
 			// 当前时间-上一次线程执行的时间>60s
-			
+
 				// 每一秒钟返回一次  怎么区分超时返回还是有任务待执行返回
 			while (taskQue_.size() == 0) {
 				if (poolMode_ == PoolMode::MODE_CACHED) {
@@ -164,7 +170,7 @@ void ThreadPool::threadFunc(int threadid) {  // 线程函数返回，相应的线程也就结束
 					return;
 				}
 			}
-			
+
 
 			idleThreadSize_--;
 
@@ -201,7 +207,8 @@ int Thread::generateId_ = 0;
 
 // 线程构造
 Thread::Thread(ThreadFunc func)
-	: func_(func), threadId_(generateId_++) {}
+	: func_(func), threadId_(generateId_++) {
+}
 // 线程析构
 Thread::~Thread() {}
 
