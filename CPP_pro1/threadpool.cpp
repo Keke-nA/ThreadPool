@@ -180,13 +180,18 @@ void ThreadPool::threadFunc(int threadid) {  // 线程函数返回，相应的线程也就结束
 			task = taskQue_.front();
 			taskQue_.pop();
 			taskSize_--;
-			// 如果依然有剩余任务，继续统治其他的线程执行任务
-			if (taskQue_.size() > 0) {
-				notEmpty_.notify_all();
-			}
-			// 取出一个任务，进行通知,通知可以继续提交生产任务
-			notFull_.notify_all();
+			//// 如果依然有剩余任务，继续统治其他的线程执行任务
+			//if (taskQue_.size() > 0) {
+			//	notEmpty_.notify_all();
+			//}
+			//// 取出一个任务，进行通知,通知可以继续提交生产任务
+			//notFull_.notify_all();
 		}  // 应该把锁释放掉
+		if (taskQue_.size() > 0) {
+			notEmpty_.notify_all();
+		}
+		// 取出一个任务，进行通知,通知可以继续提交生产任务
+		notFull_.notify_all();
 
 		// 当前线程负责执行这个任务
 		if (task != nullptr) {
