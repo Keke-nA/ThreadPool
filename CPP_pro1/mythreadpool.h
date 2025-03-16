@@ -8,6 +8,7 @@
 #include<queue>
 
 class Task {
+public:
 	Task() = default;
 	~Task() = default;
 	void run(int threadid);
