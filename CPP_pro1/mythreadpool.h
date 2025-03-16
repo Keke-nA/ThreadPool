@@ -6,12 +6,52 @@
 #include<condition_variable>
 #include<thread>
 #include<queue>
+#include <stdexcept>
+#include <typeinfo> 
+
+class MyAny {
+public:
+	MyAny() = default;
+	~MyAny() = default;
+	MyAny(const MyAny&) = delete;
+	MyAny& operator=(const MyAny&) = delete;
+	MyAny(MyAny&&) = default;
+	MyAny& operator=(MyAny&&) = default;
+
+	template<typename T>
+	MyAny(T data) :myany_base(std::make_unique<Derive<T>>(data)) {}
+
+	template<typename T>
+	T to_cast() {
+		auto ptr = dynamic_cast<Derive<T>*>(myany_base.get());
+		if (ptr == nullptr) {
+			throw std::runtime_error(
+				"dynamic_cast to Derive<T> failed. Actual type: " +
+				std::string(typeid(*myany_base).name())
+			);
+		}
+		return ptr->derive_data;
+	}
+private:
+	class Base {
+	public:
+		virtual ~Base() = default;
+	};
+	template<typename T>
+	class Derive :public Base {
+	public:
+		Derive(T data) :derive_data(data) {}
+		T derive_data;
+	};
+private:
+	std::unique_ptr<Base> myany_base;
+};
 
 class Task {
 public:
 	Task() = default;
 	~Task() = default;
-	void run(int threadid);
+	virtual void run(int threadid);
 private:
 	std::mutex tast_run_mutex;
 };
