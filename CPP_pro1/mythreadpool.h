@@ -12,6 +12,8 @@ public:
 	Task() = default;
 	~Task() = default;
 	void run(int threadid);
+private:
+	std::mutex tast_run_mutex;
 };
 
 class MyThread {
@@ -20,17 +22,19 @@ public:
 	MyThread(threadfunc func);
 	~MyThread();
 
+	int getThreadId() const;
 	void start();
 private:
 	threadfunc my_func;
 	int thread_id;
-	static int thread_size;
+	static int generate_thread_id;
 };
 
 class MyThreadPool {
 public:
 	MyThreadPool();
 	~MyThreadPool();
+	void submitTask(std::shared_ptr<Task> task);
 	void myThreadFun(int threadid);
 	void start(int start = 4);
 private:

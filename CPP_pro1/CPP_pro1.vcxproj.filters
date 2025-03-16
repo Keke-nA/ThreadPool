@@ -18,6 +18,9 @@
     <ClInclude Include="threadpool.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="mythreadpool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="threadpool.cpp">
@@ -30,6 +33,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="conditiontest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mythreadpool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mytest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
