@@ -18,7 +18,7 @@ int MyThread::getThreadId() const {
 
 void MyThread::start() {
 	std::thread t(my_func, thread_id);
-	t.join();
+	t.detach();
 }
 
 MyThreadPool::MyThreadPool() :
@@ -36,10 +36,11 @@ MyThreadPool::~MyThreadPool() {
 	exit_condition.wait(lock, [this] {return my_threads.size() == 0; });
 }
 
-void MyThreadPool::submitTask(std::shared_ptr<Task> task) {
+MyResult MyThreadPool::submitTask(std::shared_ptr<Task> task) {
 	std::unique_lock<std::mutex> lock(taskq_mutex);
 	task_queue.emplace(task);
-	cv_not_empty.notify_one();
+	cv_not_empty.notify_all();
+	return MyResult(task);
 }
 
 void MyThreadPool::myThreadFun(int threadid) {
@@ -65,8 +66,7 @@ void MyThreadPool::myThreadFun(int threadid) {
 			cv_not_empty.notify_all();
 		}
 		if (task != nullptr) {
-
-			task->run(threadid);
+			task->exec();
 		}
 		cv_not_full.notify_all();
 		idle_thread_size++;
@@ -92,8 +92,44 @@ void MyThreadPool::start(int start) {
 	}
 }
 
-void Task::run(int threadid) {
-	std::lock_guard<std::mutex> lock(tast_run_mutex);
-	std::cout << "Task::run():  " << threadid << std::endl;
+void MySemaphore::mysemaphoreWait() {
+	std::unique_lock<std::mutex> lock(semaphore_mutex);
+	cv_semaphore.wait(lock, [this]{return resourse > 0; });
+	resourse--;
+}
+void MySemaphore::mysemaphorePost() {
+	std::lock_guard<std::mutex> lock(semaphore_mutex);
+	resourse++;
+	cv_semaphore.notify_all();
+}
+
+MyAny Task::run() {
+	//std::lock_guard<std::mutex> lock(tast_run_mutex);
+	std::cout << "Task::run():  " << std::endl;
 	std::cout.flush(); // ÏÔÊ½Ë¢ÐÂ
+	return MyAny();
+}
+
+void Task::exec() {
+	my_result->setMyAny(run());
+}
+
+void Task::setResult(MyResult* res) {
+	my_result = res;
+}
+
+MyResult::MyResult(std::shared_ptr<Task> task, bool is_valid) :my_task(task), result_is_valid(is_valid) {
+	my_task->setResult(this);
+}
+
+void MyResult::setMyAny(MyAny any) {
+	my_any = std::move(any);
+	my_semaphore.mysemaphorePost();
+}
+MyAny MyResult::getResult() {
+	if (result_is_valid == false) {
+		return "";
+	}
+	my_semaphore.mysemaphoreWait();
+	return std::move(my_any);
 }

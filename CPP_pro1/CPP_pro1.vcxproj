@@ -129,7 +129,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="mythreadpool.h" />
-    <ClInclude Include="threadpool.h" />
+    <ClInclude Include="threadpool.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="conditiontest.cpp">

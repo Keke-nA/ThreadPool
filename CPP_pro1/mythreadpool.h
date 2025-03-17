@@ -47,13 +47,44 @@ private:
 	std::unique_ptr<Base> myany_base;
 };
 
+class MySemaphore {
+public:
+	MySemaphore() :resourse(0) {}
+	~MySemaphore() = default;
+	void mysemaphoreWait();
+	void mysemaphorePost();
+
+private:
+	int resourse;
+	std::mutex semaphore_mutex;
+	std::condition_variable cv_semaphore;
+};
+
+class MyResult;
+
 class Task {
 public:
 	Task() = default;
 	~Task() = default;
-	virtual void run(int threadid);
+	void setResult(MyResult* res);
+	void exec();
+	virtual MyAny run();
 private:
-	std::mutex tast_run_mutex;
+	//std::mutex tast_run_mutex;
+	MyResult* my_result;
+};
+
+class MyResult {
+public:
+	MyResult(std::shared_ptr<Task> task, bool is_valid = true);
+	~MyResult() = default;
+	void setMyAny(MyAny any);
+	MyAny getResult();
+private:
+	MyAny my_any;
+	std::shared_ptr<Task> my_task;
+	MySemaphore my_semaphore;
+	std::atomic_bool result_is_valid;
 };
 
 class MyThread {
@@ -74,7 +105,7 @@ class MyThreadPool {
 public:
 	MyThreadPool();
 	~MyThreadPool();
-	void submitTask(std::shared_ptr<Task> task);
+	MyResult submitTask(std::shared_ptr<Task> task);
 	void myThreadFun(int threadid);
 	void start(int start = 4);
 private:
