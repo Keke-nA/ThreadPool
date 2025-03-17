@@ -101,22 +101,36 @@ private:
 	static int generate_thread_id;
 };
 
+enum class PoolMode {
+	MODE_FIXED,	//固定线程模式
+	MODE_CACHED,		//动态线程模式
+};
+
 class MyThreadPool {
 public:
 	MyThreadPool();
 	~MyThreadPool();
-	MyResult submitTask(std::shared_ptr<Task> task);
-	void myThreadFun(int threadid);
-	void start(int start = 4);
+	MyResult submitTask(std::shared_ptr<Task> task);		//向线程池提交任务
+	void myThreadFun(int threadid);	//线程函数
+	void start(int start = 4);	//启动线程池，默认线程数量为4
+	void setMaxThreadSize(uint32_t size);	//设置最大线程数量
+	void setMaxTaskSize(uint32_t size);	//设置最大任务数量
+	bool checkPoolState() const;		//检查线程池运行状态
+	void setPoolMode(PoolMode mode);		//设置线程池工作模式
 private:
-	std::unordered_map<int, std::unique_ptr<MyThread>> my_threads;
-	uint16_t init_thread_size;
-	std::atomic_int cur_thread_size;
-	std::atomic_int idle_thread_size;
-	std::condition_variable cv_not_empty;
-	std::condition_variable cv_not_full;
-	std::condition_variable exit_condition;
-	std::mutex taskq_mutex;
-	std::queue<std::shared_ptr<Task>> task_queue;
-	std::atomic_bool is_threadpool_run;
+	std::unordered_map<uint32_t, std::unique_ptr<MyThread>> my_threads;	//1.线程map
+	uint32_t init_thread_size;	//2.初始线程数量
+	std::atomic_uint32_t cur_thread_size;		//3.当前线程池线程数量
+	std::atomic_uint32_t idle_thread_size;	//空闲线程数量
+	uint32_t thread_size_maxthreshold;        // 线程数量上限阈值
+
+	std::queue<std::shared_ptr<Task>> task_queue;	//任务队列
+	std::condition_variable cv_not_empty;	//任务队列不空
+	std::condition_variable cv_not_full;		//任务队列不满
+	uint32_t task_queue_maxthreshhold;                   // 任务队列数量上限阈值
+	std::mutex taskq_mutex;	//保证互斥访问任务队列
+
+	PoolMode pool_mode;	//线程池运行模式
+	std::condition_variable exit_condition;	//线程退出状态
+	std::atomic_bool is_threadpool_run;	//线程池开关状态
 };
