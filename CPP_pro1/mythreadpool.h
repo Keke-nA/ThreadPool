@@ -49,13 +49,13 @@ private:
 
 class MySemaphore {
 public:
-	MySemaphore() :resourse(0) {}
+	MySemaphore() :resource(0) {}
 	~MySemaphore() = default;
 	void mysemaphoreWait();
 	void mysemaphorePost();
 
 private:
-	int resourse;
+	int resource;
 	std::mutex semaphore_mutex;
 	std::condition_variable cv_semaphore;
 };
@@ -64,7 +64,7 @@ class MyResult;
 
 class Task {
 public:
-	Task() = default;
+	Task();
 	~Task() = default;
 	void setResult(MyResult* res);
 	void exec();
@@ -78,12 +78,16 @@ class MyResult {
 public:
 	MyResult(std::shared_ptr<Task> task, bool is_valid = true);
 	~MyResult() = default;
+	MyResult(const MyResult&) = delete;
+	MyResult& operator=(const MyResult&) = delete;
+	MyResult(MyResult&& other) noexcept;
+	MyResult& operator=(MyResult&& other) noexcept;
 	void setMyAny(MyAny any);
 	MyAny getResult();
 private:
 	MyAny my_any;
 	std::shared_ptr<Task> my_task;
-	MySemaphore my_semaphore;
+	std::unique_ptr<MySemaphore> my_semaphore;
 	std::atomic_bool result_is_valid;
 };
 

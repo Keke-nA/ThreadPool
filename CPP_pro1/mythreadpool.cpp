@@ -2,7 +2,7 @@
 #include<functional>
 
 constexpr uint32_t MAX_TASKQUEUE_SIZE = UINT32_MAX;
-constexpr uint32_t MAX_THREAD_SIZE = 2;
+constexpr uint32_t MAX_THREAD_SIZE = 200;
 constexpr uint16_t MAX_DURATION_TIME = 60;
 
 int MyThread::generate_thread_id = 0;
@@ -30,10 +30,7 @@ MyThreadPool::MyThreadPool() :
 
 MyThreadPool::~MyThreadPool() {
 	is_threadpool_run = false;
-	{
-		std::unique_lock<std::mutex> lock(taskq_mutex);
-		cv_not_empty.notify_all();  // 唤醒所有线程退出循环
-	}
+	cv_not_empty.notify_all();  // 唤醒所有线程退出循环
 	//cv_not_empty.notify_all();
 	std::unique_lock<std::mutex> lock(taskq_mutex);
 	exit_condition.wait(lock, [this] {return my_threads.size() == 0; });
@@ -158,13 +155,16 @@ void MyThreadPool::setPoolMode(PoolMode mode) {
 
 void MySemaphore::mysemaphoreWait() {
 	std::unique_lock<std::mutex> lock(semaphore_mutex);
-	cv_semaphore.wait(lock, [this] {return resourse > 0; });
-	resourse--;
+	cv_semaphore.wait(lock, [this] {return resource > 0; });
+	resource--;
 }
 void MySemaphore::mysemaphorePost() {
 	std::lock_guard<std::mutex> lock(semaphore_mutex);
-	resourse++;
+	resource++;
 	cv_semaphore.notify_all();
+}
+
+Task::Task() :my_result(nullptr) {
 }
 
 MyAny Task::run() {
@@ -183,18 +183,46 @@ void Task::setResult(MyResult* res) {
 }
 
 MyResult::MyResult(std::shared_ptr<Task> task, bool is_valid) :
-	my_task(task), result_is_valid(is_valid) {
+	my_task(task), result_is_valid(is_valid), my_semaphore(std::make_unique<MySemaphore>()) {
 	my_task->setResult(this);
+}
+
+MyResult::MyResult(MyResult&& other) noexcept
+	: my_any(std::move(other.my_any)),
+	my_task(std::move(other.my_task)),
+	my_semaphore(std::move(other.my_semaphore)),
+	result_is_valid(other.result_is_valid.load()){
+	// 更新Task中的my_result指向新的MyResult对象
+	if (my_task) {
+		my_task->setResult(this);
+	}
+	// 原对象的my_task置空
+	other.my_task.reset();
+}
+
+MyResult& MyResult::operator=(MyResult&& other) noexcept{
+	if (this != &other) {
+		my_any = std::move(other.my_any);
+		my_task = std::move(other.my_task);
+		my_semaphore = std::move(other.my_semaphore);
+		result_is_valid = other.result_is_valid.load();
+		// 更新Task中的my_result
+		if (my_task) {
+			my_task->setResult(this);
+		}
+		other.my_task.reset();
+	}
+	return *this;
 }
 
 void MyResult::setMyAny(MyAny any) {
 	my_any = std::move(any);
-	my_semaphore.mysemaphorePost();
+	my_semaphore->mysemaphorePost();
 }
 MyAny MyResult::getResult() {
 	if (result_is_valid == false) {
 		return "";
 	}
-	my_semaphore.mysemaphoreWait();
+	my_semaphore->mysemaphoreWait();
 	return std::move(my_any);
 }
